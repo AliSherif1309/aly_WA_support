@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HL7 & ASTM LIS Message Parser | Eng. Aly Sherif</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen pb-12">
+
+    <!-- Navigation Header -->
+    <header class="bg-slate-950 border-b border-slate-800 py-4 px-6 mb-8 shadow-md">
+        <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div>
+                <a href="index.html" class="text-xs font-bold text-blue-500 uppercase hover:underline">← Back to Portfolio</a>
+                <h1 class="text-lg font-bold text-white mt-0.5">Clinical IT & Middleware Portal</h1>
+            </div>
+            <div class="text-right text-xs text-slate-400">
+                <p class="font-bold text-slate-200">Eng. Aly Sherif</p>
+                <p>Ali Al Suwaidi Trading Est. • Doha, Qatar</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4">
+        
+        <!-- Page Introduction -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-black text-white tracking-tight">HL7 & ASTM LIS Message Parser</h2>
+            <p class="text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                As medical devices become increasingly connected, verifying LIS communication is vital. This utility decodes raw serial and network logs from analyzers (such as the bioMérieux VITEK or DiaSorin LIAISON) into human-readable, structured diagnostic data.
+            </p>
+        </div>
+
+        <!-- Parser Workspace Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Column 1 & 2: Input and Output (Left/Center) -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Input Card -->
+                <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-lg">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Input Raw Message</h3>
+                        
+                        <!-- Sample Loader Buttons -->
+                        <div class="flex gap-2">
+                            <button id="loadHl7Btn" class="bg-slate-800 hover:bg-slate-700 text-blue-400 text-[10px] font-bold py-1.5 px-3 rounded-lg border border-slate-700 transition">
+                                Load VITEK HL7
+                            </button>
+                            <button id="loadAstmBtn" class="bg-slate-800 hover:bg-slate-700 text-indigo-400 text-[10px] font-bold py-1.5 px-3 rounded-lg border border-slate-700 transition">
+                                Load LIAISON ASTM
+                            </button>
+                        </div>
+                    </div>
+
+                    <textarea id="rawInput" placeholder="Paste your raw HL7 pipe-delimited (|) segments or ASTM serial records here..." 
+                              class="w-full h-44 bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs font-mono text-emerald-400 focus:outline-none focus:border-blue-600 transition placeholder-slate-600"></textarea>
+                    
+                    <button id="parseBtn" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition duration-200">
+                        Parse Message
+                    </button>
+                </div>
+
+                <!-- Output Card -->
+                <div id="outputCard" class="hidden bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-lg space-y-6">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Decoded Diagnostic Data</h3>
+                    
+                    <!-- Message Metadata -->
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-900 p-4 rounded-xl border border-slate-800 text-xs">
+                        <div>
+                            <span class="text-slate-500 block">Protocol Detected:</span>
+                            <span id="metaProtocol" class="font-bold text-blue-400">--</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Sending Application:</span>
+                            <span id="metaApp" class="font-bold text-white">--</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">Message Date/Time:</span>
+                            <span id="metaTime" class="font-bold text-white">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Patient Demographics -->
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-bold text-slate-400 border-b border-slate-800 pb-1">👤 Patient Identification</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                            <div>
+                                <span class="text-slate-500 block">Patient ID:</span>
+                                <span id="patId" class="font-bold text-white">--</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Patient Name:</span>
+                                <span id="patName" class="font-bold text-white">--</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Date of Birth:</span>
+                                <span id="patDob" class="font-bold text-white">--</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Gender:</span>
+                                <span id="patGender" class="font-bold text-white">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Details -->
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-bold text-slate-400 border-b border-slate-800 pb-1">🧪 Order / Specimen Details</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                            <div>
+                                <span class="text-slate-500 block">Accession / Sample ID:</span>
+                                <span id="ordAccession" class="font-bold text-white">--</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Requested Test:</span>
+                                <span id="ordTest" class="font-bold text-blue-400">--</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Collection Time:</span>
+                                <span id="ordTime" class="font-bold text-white">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Table -->
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-bold text-slate-400 border-b border-slate-800 pb-1">📊 Observation Results</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="text-slate-500 border-b border-slate-800">
+                                        <th class="py-2">Parameter / Target</th>
+                                        <th class="py-2">Result Value</th>
+                                        <th class="py-2">Units</th>
+                                        <th class="py-2">Ref Range</th>
+                                        <th class="py-2 text-right">Flag</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTableBody">
+                                    <!-- Dynamic Rows Inserted Here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Column 3: Protocol Glossary (Right) -->
+            <div class="space-y-6">
+                
+                <!-- Quick Reference Guide Card -->
+                <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-lg text-xs space-y-4">
+                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Protocol Glossary</h3>
+                    
+                    <div class="space-y-3">
+                        <h4 class="font-bold text-blue-400">HL7 Segments (ASTM equiv.)</h4>
+                        <ul class="space-y-2 text-slate-400 leading-relaxed">
+                            <li><strong class="text-slate-200">MSH (H):</strong> Message Header. Identifies the instrument model and communication date.</li>
+                            <li><strong class="text-slate-200">PID (P):</strong> Patient Identification. Holds demographic and patient ID codes.</li>
+                            <li><strong class="text-slate-200">OBR (O):</strong> Observation Request. Specifies the lab's requested test and specimen ID.</li>
+                            <li><strong class="text-slate-200">OBX (R):</strong> Observation Result. Delivers the quantitative or qualitative machine result with flags.</li>
+                        </ul>
+                    </div>
+
+                    <div class="border-t border-slate-800 pt-3 space-y-3">
+                        <h4 class="font-bold text-indigo-400">Technical Flags Explained</h4>
+                        <ul class="space-y-2 text-slate-400">
+                            <li><strong class="text-white">H / L:</strong> High / Low relative to the normal reference range.</li>
+                            <li><strong class="text-white">N:</strong> Normal, compliant value.</li>
+                            <li><strong class="text-rose-500">A / AA:</strong> Abnormal / Critical Alert. Immediate clinical action required.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- JavaScript Parser Engine -->
+    <script>
+        const rawInput = document.getElementById('rawInput');
+        const parseBtn = document.getElementById('parseBtn');
+        const outputCard = document.getElementById('outputCard');
+        
+        const loadHl7Btn = document.getElementById('loadHl7Btn');
+        const loadAstmBtn = document.getElementById('loadAstmBtn');
+
+        // Target Outputs
+        const metaProtocol = document.getElementById('metaProtocol');
+        const metaApp = document.getElementById('metaApp');
+        const metaTime = document.getElementById('metaTime');
+        const patId = document.getElementById('patId');
+        const patName = document.getElementById('patName');
+        const patDob = document.getElementById('patDob');
+        const patGender = document.getElementById('patGender');
+        const ordAccession = document.getElementById('ordAccession');
+        const ordTest = document.getElementById('ordTest');
+        const ordTime = document.getElementById('ordTime');
+        const resultsTableBody = document.getElementById('resultsTableBody');
+
+        // Sample Data Blocks
+        const HL7_SAMPLE = `MSH|^~\\&|VITEK^MS_PRIME|BIOMERIEUX|||20260724103000||ORU^R01|76812|P|2.3\r\nPID|1||PAT99341||AL_KAABI^MOHAMMED^A||19850412|M\r\nOBR|1||ACC-88390|SARS-COV-2_DETECTION^Target_PCR||20260724090000\r\nOBX|1|CE|SARS-COV-2|POSITIVE|N/A|Negative|A|F`;
+        const ASTM_SAMPLE = `H|\\^&|||LIAISON_XL^DIASORIN|||||||P|1\r\nP|1|PAT-88301||AL-KUWARI^FATIMA||20010915|F\r\nO|1|BARCODE-3310||^^^HEPATITIS_B_SURFACE_AG||20260724083000\r\nR|1|^^^HEPATITIS_B_SURFACE_AG|0.15|IU/mL|0.00-0.90|N|F`;
+
+        // Load Samples
+        loadHl7Btn.addEventListener('click', () => { rawInput.value = HL7_SAMPLE; });
+        loadAstmBtn.addEventListener('click', () => { rawInput.value = ASTM_SAMPLE; });
+
+        // Parser Core Engine
+        parseBtn.addEventListener('click', () => {
+            const rawText = rawInput.value.trim();
+            if (!rawText) {
+                alert("Please paste or load a raw message first.");
+                return;
+            }
+
+            // Clean raw serial carriage returns or line breaks
+            const lines = rawText.split(/\r?\n/);
+            
+            // Detect protocol
+            if (lines[0].startsWith('MSH')) {
+                parseHL7(lines);
+            } else if (lines[0].startsWith('H')) {
+                parseASTM(lines);
+            } else {
+                alert("Could not detect protocol. Ensure the message starts with MSH (HL7) or H (ASTM).");
+            }
+        });
+
+        // HL7 Parser Function
+        function parseHL7(lines) {
+            outputCard.classList.remove('hidden');
+            resultsTableBody.innerHTML = ''; // Reset table
+
+            metaProtocol.textContent = "HL7 v2.3";
+            metaProtocol.className = "font-bold text-emerald-400";
+
+            lines.forEach(line => {
+                // Strip non-printable ASCII control characters (STX, ETX, etc.)
+                const cleanLine = line.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
+                const fields = cleanLine.split('|');
+                const segmentType = fields[0];
+
+                if (segmentType === 'MSH') {
+                    metaApp.textContent = fields[2] ? fields[2].replace('^', ' ') : "VITEK MS";
+                    metaTime.textContent = formatDateTime(fields[6]);
+                } 
+                else if (segmentType === 'PID') {
+                    patId.textContent = fields[3] || "N/A";
+                    patName.textContent = fields[5] ? fields[5].replace(/\^/g, ' ') : "N/A";
+                    patDob.textContent = formatBirthDate(fields[7]);
+                    patGender.textContent = fields[8] || "N/A";
+                } 
+                else if (segmentType === 'OBR') {
+                    ordAccession.textContent = fields[3] || "N/A";
+                    ordTest.textContent = fields[4] ? fields[4].replace('^', ' ') : "N/A";
+                    ordTime.textContent = formatDateTime(fields[6]);
+                } 
+                else if (segmentType === 'OBX') {
+                    const testName = fields[3] ? fields[3].replace(/\^/g, ' ') : "N/A";
+                    const value = fields[5] || "--";
+                    const units = fields[6] || "N/A";
+                    const refRange = fields[7] || "N/A";
+                    const flag = fields[8] || "N";
+
+                    addResultRow(testName, value, units, refRange, flag);
+                }
+            });
+        }
+
+        // ASTM Parser Function
+        function parseASTM(lines) {
+            outputCard.classList.remove('hidden');
+            resultsTableBody.innerHTML = ''; // Reset table
+
+            metaProtocol.textContent = "ASTM E1394";
+            metaProtocol.className = "font-bold text-indigo-400";
+
+            lines.forEach(line => {
+                // Strip non-printable control characters
+                const cleanLine = line.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
+                const fields = cleanLine.split('|');
+                const recordType = fields[0];
+
+                if (recordType === 'H') {
+                    metaApp.textContent = fields[4] ? fields[4].replace('^', ' ') : "LIAISON XL";
+                    metaTime.textContent = formatDateTime(fields[13]);
+                } 
+                else if (recordType === 'P') {
+                    patId.textContent = fields[2] || "N/A";
+                    patName.textContent = fields[4] ? fields[4].replace(/\^/g, ' ') : "N/A";
+                    patDob.textContent = formatBirthDate(fields[6]);
+                    patGender.textContent = fields[7] || "N/A";
+                } 
+                else if (recordType === 'O') {
+                    ordAccession.textContent = fields[2] || "N/A";
+                    ordTest.textContent = fields[4] ? fields[4].replace(/\^/g, ' ') : "N/A";
+                    ordTime.textContent = formatDateTime(fields[5]);
+                } 
+                else if (recordType === 'R') {
+                    const testName = fields[2] ? fields[2].replace(/\^/g, ' ') : "N/A";
+                    const value = fields[3] || "--";
+                    const units = fields[4] || "N/A";
+                    const refRange = fields[5] || "N/A";
+                    const flag = fields[6] || "N";
+
+                    addResultRow(testName, value, units, refRange, flag);
+                }
+            });
+        }
+
+        // Helper to insert a parsed row into the observations table
+        function addResultRow(parameter, value, units, refRange, flag) {
+            const tr = document.createElement('tr');
+            tr.className = "border-b border-slate-800 text-slate-300 hover:bg-slate-900 transition";
+
+            // Style flags
+            let flagClass = "text-slate-400";
+            if (flag === 'H' || flag === 'A' || flag === 'AA' || flag === 'POSITIVE') {
+                flagClass = "text-rose-500 font-bold bg-rose-500/10 px-1.5 py-0.5 rounded";
+            } else if (flag === 'L') {
+                flagClass = "text-blue-500 font-bold bg-blue-500/10 px-1.5 py-0.5 rounded";
+            } else if (flag === 'N') {
+                flagClass = "text-emerald-500";
+            }
+
+            tr.innerHTML = `
+                <td class="py-3 font-semibold text-white">${parameter}</td>
+                <td class="py-3 font-mono">${value}</td>
+                <td class="py-3 text-slate-400">${units}</td>
+                <td class="py-3 text-slate-400">${refRange}</td>
+                <td class="py-3 text-right"><span class="${flagClass}">${flag}</span></td>
+            `;
+            resultsTableBody.appendChild(tr);
+        }
+
+        // Helper to format LIS date strings (YYYYMMDDHHMMSS) to readable formats
+        function formatDateTime(rawDate) {
+            if (!rawDate || rawDate.length < 8) return "N/A";
+            const year = rawDate.substring(0, 4);
+            const month = rawDate.substring(4, 6);
+            const day = rawDate.substring(6, 8);
+            
+            let formatted = `${year}-${month}-${day}`;
+            if (rawDate.length >= 12) {
+                const hour = rawDate.substring(8, 10);
+                const min = rawDate.substring(10, 12);
+                formatted += ` ${hour}:${min}`;
+            }
+            return formatted;
+        }
+
+        // Helper to format DOB strings (YYYYMMDD)
+        function formatBirthDate(rawDate) {
+            if (!rawDate || rawDate.length < 8) return "N/A";
+            const year = rawDate.substring(0, 4);
+            const month = rawDate.substring(4, 6);
+            const day = rawDate.substring(6, 8);
+            return `${year}-${month}-${day}`;
+        }
+    </script>
+</body>
+</html>
