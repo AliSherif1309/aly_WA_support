@@ -221,7 +221,10 @@
             }
 
             // Clean raw serial carriage returns or line breaks
-            const lines = rawText.split(/\r?\n/);
+            const lines = rawText.split(/\r\n|\r|\n/)
+                .map(line => line.replace(/^[\x00-\x20]+/, '').trim())
+                .filter(Boolean);
+            resetOutput();
             
             // Detect protocol
             if (lines[0].startsWith('MSH')) {
@@ -232,6 +235,13 @@
                 alert("Could not detect protocol. Ensure the message starts with MSH (HL7) or H (ASTM).");
             }
         });
+
+        function resetOutput() {
+            outputCard.classList.add('hidden');
+            resultsTableBody.replaceChildren();
+            [metaProtocol, metaApp, metaTime, patId, patName, patDob, patGender,
+             ordAccession, ordTest, ordTime].forEach(element => { element.textContent = 'N/A'; });
+        }
 
         // HL7 Parser Function
         function parseHL7(lines) {
@@ -301,7 +311,7 @@
                 else if (recordType === 'O') {
                     ordAccession.textContent = fields[2] || "N/A";
                     ordTest.textContent = fields[4] ? fields[4].replace(/\^/g, ' ') : "N/A";
-                    ordTime.textContent = formatDateTime(fields[5]);
+                    ordTime.textContent = formatDateTime(fields[6]);
                 } 
                 else if (recordType === 'R') {
                     const testName = fields[2] ? fields[2].replace(/\^/g, ' ') : "N/A";
@@ -330,13 +340,22 @@
                 flagClass = "text-emerald-500";
             }
 
-            tr.innerHTML = `
-                <td class="py-3 font-semibold text-white">${parameter}</td>
-                <td class="py-3 font-mono">${value}</td>
-                <td class="py-3 text-slate-400">${units}</td>
-                <td class="py-3 text-slate-400">${refRange}</td>
-                <td class="py-3 text-right"><span class="${flagClass}">${flag}</span></td>
-            `;
+            const values = [parameter, value, units, refRange];
+            const classes = ['py-3 font-semibold text-white', 'py-3 font-mono',
+                             'py-3 text-slate-400', 'py-3 text-slate-400'];
+            values.forEach((text, index) => {
+                const cell = document.createElement('td');
+                cell.className = classes[index];
+                cell.textContent = text;
+                tr.appendChild(cell);
+            });
+            const flagCell = document.createElement('td');
+            flagCell.className = 'py-3 text-right';
+            const flagSpan = document.createElement('span');
+            flagSpan.className = flagClass;
+            flagSpan.textContent = flag;
+            flagCell.appendChild(flagSpan);
+            tr.appendChild(flagCell);
             resultsTableBody.appendChild(tr);
         }
 
